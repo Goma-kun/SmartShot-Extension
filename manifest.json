@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "SmartShot",
+  "version": "0.1.0",
+  "description": "範囲選択スクリーンショット。要素自動検出・エッジハンドル対応。",
+  "permissions": ["activeTab", "tabs", "storage", "downloads", "scripting"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "take-screenshot": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "スクリーンショット範囲選択を起動"
+    }
+  }
+}
