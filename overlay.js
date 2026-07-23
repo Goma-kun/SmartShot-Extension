@@ -40,7 +40,7 @@
       <div id="wrap">
         <div id="bg"><img id="bgi"></div>
         <canvas id="cv"></canvas>
-        <div id="guide" id="guide-text">要素にホバーで自動検出 ／ ドラッグで手動選択 ／ Esc でキャンセル</div>
+        <div id="guide">要素にホバーで自動検出 ／ ドラッグで手動選択 ／ Esc でキャンセル</div>
       </div>`;
 
     const bgi   = shadow.getElementById('bgi');
@@ -250,6 +250,11 @@
       octx.drawImage(cropImg, r.x*DPR, r.y*DPR, pw, ph, 0, 0, pw, ph);
       const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
       chrome.runtime.sendMessage({type:'download', dataUrl:off.toDataURL('image/png'), filename:`SmartShot_${ts}.png`});
+      // 確定と同時にクリップボードへもコピー（失敗してもPNG保存は済んでいる）
+      try {
+        const blob = new Promise(res => off.toBlob(res, 'image/png'));
+        navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).catch(()=>{});
+      } catch (_) {}
       cleanup();
     }
 

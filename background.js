@@ -1,3 +1,7 @@
+// コンテンツスクリプト(overlay.js)から storage.session を読めるようにする
+// （MV3のデフォルトは TRUSTED_CONTEXTS のみで、これが無いとオーバーレイが起動しない）
+chrome.storage.session.setAccessLevel({accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS'});
+
 async function launchOverlay(tabId, windowId) {
   try {
     const dataUrl = await chrome.tabs.captureVisibleTab(windowId, {format: 'png'});
