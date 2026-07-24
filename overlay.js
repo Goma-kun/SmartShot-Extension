@@ -169,6 +169,40 @@
       return best;
     }
 
+    // 任意の矩形の4隅それぞれについて、その角に重なる要素の対応する角丸を採用する。
+    // これにより、手動でドラッグ・リサイズした選択でも、角が丸い要素の角に一致したところだけ丸くなる
+    // （例：左は丸いサムネ、右は四角いテキスト → 左2角だけ丸く追従）。
+    function radiiForRect(x, y, w, h) {
+      const near=(a,b)=>Math.abs(a-b)<=8;
+      const m=Math.min(w,h)/2;
+      // [角名, 角のx, 角のy, 内側方向x, 内側方向y, CSSプロパティ, 要素側で見る辺x, 辺y]
+      const specs=[
+        [x,   y,   +1,+1, 'borderTopLeftRadius',     'left','top'],
+        [x+w, y,   -1,+1, 'borderTopRightRadius',    'right','top'],
+        [x+w, y+h, -1,-1, 'borderBottomRightRadius', 'right','bottom'],
+        [x,   y+h, +1,-1, 'borderBottomLeftRadius',  'left','bottom'],
+      ];
+      return specs.map(([cx,cy,ix,iy,prop,ex,ey])=>{
+        host.style.pointerEvents='none';
+        const el=document.elementFromPoint(cx+ix*3, cy+iy*3);
+        host.style.pointerEvents='all';
+        if (!el || el===document.documentElement || el===document.body) return 0;
+        let best=0;
+        const consider=e=>{
+          if (!e || e.nodeType!==1) return;
+          let r; try { r=e.getBoundingClientRect(); } catch(_){ return; }
+          if (!near(r[ex],cx) || !near(r[ey],cy)) return;   // 要素の対応する角が選択の角と一致するか
+          const rad=parseFloat(getComputedStyle(e)[prop])||0;
+          best=Math.max(best, Math.min(rad, m));
+        };
+        consider(el);
+        let p=el.parentElement, d=0; while(p&&d<4){consider(p);p=p.parentElement;d++;}
+        const stack=[...el.children]; let n=0;
+        while(stack.length&&n<24){const c=stack.pop();n++;consider(c);if(c.children&&c.children.length)stack.push(...c.children);}
+        return best;
+      });
+    }
+
     function detectElem(mx,my) {
       host.style.pointerEvents = 'none';
       const el = document.elementFromPoint(mx, my);
@@ -289,7 +323,8 @@
           const st=snap1(ny,yLines), sb=snap1(ny+h,yLines);
           if (sl!==null){ nx=sl; snapGuides.x=sl; } else if (sr!==null){ nx=sr-w; snapGuides.x=sr; }
           if (st!==null){ ny=st; snapGuides.y=st; } else if (sb!==null){ ny=sb-h; snapGuides.y=sb; }
-          prevRect={x:nx,y:ny,w,h, r:hOrigRect.r};
+          prevRect={x:nx,y:ny,w,h};
+          prevRect.r=radiiForRect(nx,ny,w,h);   // 移動先で角丸を取り直す
         }
         else {
           let x1=x,y1=y,x2=x+w,y2=y+h;
@@ -297,7 +332,8 @@
           if (activeH.includes('R')) { x2=x+w+dx; const s=snap1(x2,xLines); if(s!==null){x2=s;snapGuides.x=s;} x2=Math.max(x2,x1+10); }
           if (activeH.includes('T')) { y1=y+dy; const s=snap1(y1,yLines); if(s!==null){y1=s;snapGuides.y=s;} y1=Math.min(y1,y2-10); }
           if (activeH.includes('B')) { y2=y+h+dy; const s=snap1(y2,yLines); if(s!==null){y2=s;snapGuides.y=s;} y2=Math.max(y2,y1+10); }
-          prevRect=norm(x1,y1,x2,y2); prevRect.r=hOrigRect.r;
+          prevRect=norm(x1,y1,x2,y2);
+          prevRect.r=radiiForRect(prevRect.x,prevRect.y,prevRect.w,prevRect.h);   // リサイズ後の各角を判定
         }
         draw(); return;
       }
@@ -307,7 +343,9 @@
         const sx=snap1(ex,xLines), sy=snap1(ey,yLines);
         if (sx!==null){ ex=sx; snapGuides.x=sx; }
         if (sy!==null){ ey=sy; snapGuides.y=sy; }
-        dragRect=norm(dragStart.x,dragStart.y,ex,ey); draw(); return;
+        dragRect=norm(dragStart.x,dragStart.y,ex,ey);
+        dragRect.r=radiiForRect(dragRect.x,dragRect.y,dragRect.w,dragRect.h);   // ドラッグ中も角丸を追従
+        draw(); return;
       }
       if (prevRect) { setCursor(mx,my); return; }
       hoverRect=detectElem(mx,my);
@@ -343,6 +381,7 @@
       if (sx!==null) ex=sx;
       if (sy!==null) ey=sy;
       prevRect=norm(dragStart.x,dragStart.y,ex,ey);
+      prevRect.r=radiiForRect(prevRect.x,prevRect.y,prevRect.w,prevRect.h);   // 確定時にも各角を判定
       dragStart=dragRect=hoverRect=null;
       snapGuides={x:null,y:null};
       setGuide(true); draw();
