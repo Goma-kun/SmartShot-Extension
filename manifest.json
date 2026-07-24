@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SmartShot",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "範囲選択スクリーンショット。要素自動検出・エッジハンドル対応。",
   "permissions": ["activeTab", "tabs", "storage", "downloads", "scripting", "clipboardWrite"],
   "action": {

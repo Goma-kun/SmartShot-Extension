@@ -65,6 +65,29 @@
     let hOrigRect  = null;
 
     const EHIT = 10;           // ハンドル当たり判定 px
+    const SNAP = 8;            // エッジスナップ距離 px
+    let snapGuides = {x:null, y:null};
+
+    // ページ内の可視要素の辺を収集（ドラッグ・リサイズ・移動時のスナップ先）
+    let xLines=[], yLines=[];
+    (function collectSnapLines(){
+      const xs=new Set(), ys=new Set();
+      for (const el of document.querySelectorAll('body *')) {
+        const r = el.getBoundingClientRect();
+        if (r.width<10 || r.height<10) continue;
+        if (r.bottom<0 || r.right<0 || r.top>H || r.left>W) continue;
+        xs.add(Math.round(r.left)); xs.add(Math.round(r.right));
+        ys.add(Math.round(r.top));  ys.add(Math.round(r.bottom));
+        if (xs.size>4000) break;
+      }
+      xLines=[...xs]; yLines=[...ys];
+    })();
+
+    function snap1(v, lines){
+      let best=null, bd=SNAP+1;
+      for (const l of lines){ const d=Math.abs(v-l); if (d<bd){ bd=d; best=l; } }
+      return best;
+    }
 
     function norm(x1,y1,x2,y2){ return {x:Math.min(x1,x2),y:Math.min(y1,y2),w:Math.abs(x2-x1),h:Math.abs(y2-y1)}; }
 
@@ -155,6 +178,15 @@
           ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.lineWidth=1; ctx.stroke();
         }
       }
+
+      // スナップガイド線（吸着中の辺を表示）
+      if (snapGuides.x!==null || snapGuides.y!==null) {
+        ctx.save();
+        ctx.strokeStyle='rgba(255,86,180,0.9)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+        if (snapGuides.x!==null){ ctx.beginPath(); ctx.moveTo(snapGuides.x+0.5,0); ctx.lineTo(snapGuides.x+0.5,H); ctx.stroke(); }
+        if (snapGuides.y!==null){ ctx.beginPath(); ctx.moveTo(0,snapGuides.y+0.5); ctx.lineTo(W,snapGuides.y+0.5); ctx.stroke(); }
+        ctx.restore();
+      }
     }
 
     const CURSOR_MAP = {TL:'nwse-resize',BR:'nwse-resize',TR:'nesw-resize',BL:'nesw-resize',T:'ns-resize',B:'ns-resize',L:'ew-resize',R:'ew-resize',move:'move'};
@@ -167,7 +199,7 @@
 
     function setGuide(isPreview) {
       guide.textContent = isPreview
-        ? 'ドラッグでリサイズ・移動 ／ クリックまたは Return で保存 ／ Esc で再選択'
+        ? '辺にピタッと吸着 ／ Return またはクリックでコピー＆保存 ／ Esc で再選択'
         : '要素にホバーで自動検出 ／ ドラッグで手動選択 ／ Esc でキャンセル';
     }
 
@@ -177,18 +209,34 @@
       if (activeH) {
         const dx=mx-hOrigin.x, dy=my-hOrigin.y;
         let {x,y,w,h}=hOrigRect;
-        if (activeH==='move') { prevRect={x:x+dx,y:y+dy,w,h}; }
+        snapGuides={x:null,y:null};
+        if (activeH==='move') {
+          let nx=x+dx, ny=y+dy;
+          // 移動中は左右/上下の辺、両方をスナップ対象にする
+          const sl=snap1(nx,xLines), sr=snap1(nx+w,xLines);
+          const st=snap1(ny,yLines), sb=snap1(ny+h,yLines);
+          if (sl!==null){ nx=sl; snapGuides.x=sl; } else if (sr!==null){ nx=sr-w; snapGuides.x=sr; }
+          if (st!==null){ ny=st; snapGuides.y=st; } else if (sb!==null){ ny=sb-h; snapGuides.y=sb; }
+          prevRect={x:nx,y:ny,w,h};
+        }
         else {
           let x1=x,y1=y,x2=x+w,y2=y+h;
-          if (activeH.includes('L')) x1=Math.min(x+dx,x2-10);
-          if (activeH.includes('R')) x2=Math.max(x+w+dx,x1+10);
-          if (activeH.includes('T')) y1=Math.min(y+dy,y2-10);
-          if (activeH.includes('B')) y2=Math.max(y+h+dy,y1+10);
+          if (activeH.includes('L')) { x1=x+dx; const s=snap1(x1,xLines); if(s!==null){x1=s;snapGuides.x=s;} x1=Math.min(x1,x2-10); }
+          if (activeH.includes('R')) { x2=x+w+dx; const s=snap1(x2,xLines); if(s!==null){x2=s;snapGuides.x=s;} x2=Math.max(x2,x1+10); }
+          if (activeH.includes('T')) { y1=y+dy; const s=snap1(y1,yLines); if(s!==null){y1=s;snapGuides.y=s;} y1=Math.min(y1,y2-10); }
+          if (activeH.includes('B')) { y2=y+h+dy; const s=snap1(y2,yLines); if(s!==null){y2=s;snapGuides.y=s;} y2=Math.max(y2,y1+10); }
           prevRect=norm(x1,y1,x2,y2);
         }
         draw(); return;
       }
-      if (dragStart) { dragRect=norm(dragStart.x,dragStart.y,mx,my); draw(); return; }
+      if (dragStart) {
+        let ex=mx, ey=my;
+        snapGuides={x:null,y:null};
+        const sx=snap1(ex,xLines), sy=snap1(ey,yLines);
+        if (sx!==null){ ex=sx; snapGuides.x=sx; }
+        if (sy!==null){ ey=sy; snapGuides.y=sy; }
+        dragRect=norm(dragStart.x,dragStart.y,ex,ey); draw(); return;
+      }
       if (prevRect) { setCursor(mx,my); return; }
       hoverRect=detectElem(mx,my);
       draw(); setCursor(mx,my);
@@ -209,7 +257,7 @@
     cv.addEventListener('mouseup', e => {
       if (e.button!==0) return;
       const mx=e.offsetX, my=e.offsetY;
-      if (activeH) { activeH=hOrigin=hOrigRect=null; return; }
+      if (activeH) { activeH=hOrigin=hOrigRect=null; snapGuides={x:null,y:null}; draw(); return; }
       if (!dragStart) return;
       const dx=mx-dragStart.x, dy=my-dragStart.y;
       if (Math.abs(dx)<5 && Math.abs(dy)<5) {
@@ -217,8 +265,14 @@
         else { dragStart=null; }
         return;
       }
-      prevRect=norm(dragStart.x,dragStart.y,mx,my);
+      // ドラッグ終点にスナップを適用してからプレビュー確定
+      let ex=mx, ey=my;
+      const sx=snap1(ex,xLines), sy=snap1(ey,yLines);
+      if (sx!==null) ex=sx;
+      if (sy!==null) ey=sy;
+      prevRect=norm(dragStart.x,dragStart.y,ex,ey);
       dragStart=dragRect=hoverRect=null;
+      snapGuides={x:null,y:null};
       setGuide(true); draw();
     });
 
@@ -240,7 +294,24 @@
       host.remove();
     }
 
-    // ── 保存 ──
+    // ── トースト通知 ──
+    function toast(msg, ok) {
+      const t=document.createElement('div');
+      Object.assign(t.style, {
+        position:'fixed', left:'50%', bottom:'48px', transform:'translateX(-50%)',
+        zIndex:'2147483647', padding:'10px 18px', borderRadius:'8px',
+        background: ok ? 'rgba(16,185,129,0.95)' : 'rgba(239,68,68,0.95)',
+        color:'#fff', font:'600 13px -apple-system,"Hiragino Sans",sans-serif',
+        boxShadow:'0 4px 20px rgba(0,0,0,0.4)', pointerEvents:'none',
+        opacity:'0', transition:'opacity 0.15s',
+      });
+      t.textContent=msg;
+      document.documentElement.appendChild(t);
+      requestAnimationFrame(()=>{ t.style.opacity='1'; });
+      setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),200); }, 1600);
+    }
+
+    // ── 保存＆コピー ──
     function save(r) {
       const pw=Math.round(r.w*DPR), ph=Math.round(r.h*DPR);
       if (pw<1||ph<1) return;
@@ -248,14 +319,32 @@
       off.width=pw; off.height=ph;
       const octx=off.getContext('2d');
       octx.drawImage(cropImg, r.x*DPR, r.y*DPR, pw, ph, 0, 0, pw, ph);
+
+      // クリップボードへコピー。navigator.clipboard.write は「その文書がフォーカスを
+      // 持っている」ことが必要なので、オーバーレイを消す前・ユーザー操作の同期文脈で実行する。
       const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
-      chrome.runtime.sendMessage({type:'download', dataUrl:off.toDataURL('image/png'), filename:`SmartShot_${ts}.png`});
-      // 確定と同時にクリップボードへもコピー（失敗してもPNG保存は済んでいる）
+      const finish = (copied) => {
+        chrome.runtime.sendMessage({type:'download', dataUrl:off.toDataURL('image/png'), filename:`SmartShot_${ts}.png`});
+        toast(copied ? 'コピーしました（⌘Vで貼り付け）／PNGも保存' : 'PNG保存のみ（コピー失敗）', copied);
+        cleanup();
+      };
+
+      let done=false;
+      const settle=(copied)=>{ if(done) return; done=true; finish(copied); };
+
       try {
-        const blob = new Promise(res => off.toBlob(res, 'image/png'));
-        navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).catch(()=>{});
-      } catch (_) {}
-      cleanup();
+        off.toBlob((blob)=>{
+          if (!blob) { settle(false); return; }
+          try {
+            navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+              .then(()=>settle(true))
+              .catch(()=>settle(false));
+          } catch(_) { settle(false); }
+        }, 'image/png');
+      } catch(_) { settle(false); }
+
+      // 念のためのフォールバック（toBlobのコールバックが来ない環境向け）
+      setTimeout(()=>settle(false), 1500);
     }
 
     // 初期描画（全面暗転）
