@@ -18,12 +18,21 @@
   });
 
   function init(imgSrc) {
-    // getBoundingClientRect と同じ座標系（縦スクロールバーを除いた表示領域）に合わせる。
-    // innerWidth を使うとスクロールバー幅ぶん背景が横に伸び、右側の要素ほど枠がずれる。
-    const W = document.documentElement.clientWidth;
-    const H = document.documentElement.clientHeight;
+    // 先にキャプチャ画像を読み込み、その実ピクセルサイズから座標系を決める（build 参照）
     const DPR = window.devicePixelRatio || 1;
-    // オーバーレイもスクロールバーを覆わないよう、表示領域ぴったりに配置する
+    const cropImg = new Image();
+    cropImg.onload  = () => build(imgSrc, cropImg, DPR);
+    cropImg.onerror = () => build(imgSrc, cropImg, DPR);
+    cropImg.src = imgSrc;
+  }
+
+  function build(imgSrc, cropImg, DPR) {
+    // キャプチャ画像の実ピクセルサイズ ÷ DPR ＝ ビューポートの正確な論理(CSS)サイズ。
+    // これは getBoundingClientRect と 1:1 で対応するので、背景を等倍表示すれば枠と完全に一致する。
+    // innerWidth/clientWidth を直接使うとスクロールバー幅やズームの分だけ右方向にずれる（従来の不具合原因）。
+    const W = cropImg.naturalWidth  ? Math.round(cropImg.naturalWidth  / DPR) : document.documentElement.clientWidth;
+    const H = cropImg.naturalHeight ? Math.round(cropImg.naturalHeight / DPR) : document.documentElement.clientHeight;
+    // オーバーレイを実ビューポートぴったりに配置する
     Object.assign(host.style, {
       top:'0', left:'0', right:'auto', bottom:'auto',
       width:W+'px', height:H+'px',
@@ -58,8 +67,7 @@
     cv.width    = W; cv.height = H;
     cv.style.cssText = `width:${W}px;height:${H}px`;
 
-    const cropImg = new Image();
-    cropImg.src = imgSrc;
+    // cropImg は build 冒頭で読み込み済み
 
     // ── 状態 ──
     let mode       = 'hover';  // hover | drag | preview
