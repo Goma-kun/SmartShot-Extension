@@ -56,7 +56,7 @@
       <div id="wrap">
         <div id="bg"><img id="bgi"></div>
         <canvas id="cv"></canvas>
-        <div id="guide">要素にホバーで自動検出 ／ ドラッグで手動選択 ／ Esc でキャンセル</div>
+        <div id="guide">要素にホバーで自動検出 ／ ドラッグで手動選択 ／ スクロールで位置移動 ／ Esc でキャンセル</div>
       </div>`;
 
     const bgi   = shadow.getElementById('bgi');
@@ -67,7 +67,8 @@
     cv.width    = W; cv.height = H;
     cv.style.cssText = `width:${W}px;height:${H}px`;
 
-    // cropImg は build 冒頭で読み込み済み
+    // cropImg は build 冒頭で読み込み済み。以後の再キャプチャでは再描画のみ行う
+    cropImg.onload = null;
 
     // ── 状態 ──
     let mode       = 'hover';  // hover | drag | preview
@@ -84,8 +85,9 @@
     let snapGuides = {x:null, y:null};
 
     // ページ内の可視要素の辺を収集（ドラッグ・リサイズ・移動時のスナップ先）
+    // スクロールで撮影位置が変わったら再収集するので関数化しておく
     let xLines=[], yLines=[];
-    (function collectSnapLines(){
+    function collectSnapLines(){
       const xs=new Set(), ys=new Set();
       for (const el of document.querySelectorAll('body *')) {
         const r = el.getBoundingClientRect();
@@ -96,7 +98,8 @@
         if (xs.size>4000) break;
       }
       xLines=[...xs]; yLines=[...ys];
-    })();
+    }
+    collectSnapLines();
 
     function snap1(v, lines){
       let best=null, bd=SNAP+1;
@@ -269,7 +272,7 @@
     function setGuide(isPreview) {
       guide.textContent = isPreview
         ? '辺にピタッと吸着 ／ Return またはクリックでコピー＆保存 ／ Esc で再選択'
-        : '要素にホバーで自動検出 ／ ドラッグで手動選択 ／ Esc でキャンセル';
+        : '要素にホバーで自動検出 ／ ドラッグで手動選択 ／ スクロールで位置移動 ／ Esc でキャンセル';
     }
 
     // ── マウスイベント ──
@@ -358,8 +361,60 @@
     }
     document.addEventListener('keydown', onKey, true);
 
+    // ── スクロールして撮影位置を変える ──
+    // 起動時の1枚に固定されず、スクロールで別の場所を見てから選べるようにする。
+    // スクロール中はオーバーレイを透明化して実ページを見せ、止まったら撮り直して選択モードへ戻す。
+    let scrolling=false, scrollTimer=null;
+    const scrollHint=document.createElement('div');
+    Object.assign(scrollHint.style, {
+      position:'fixed', top:'12px', left:'50%', transform:'translateX(-50%)',
+      zIndex:'2147483647', padding:'6px 14px', borderRadius:'8px',
+      background:'rgba(0,0,0,0.78)', color:'#fff',
+      font:'600 12px -apple-system,"Hiragino Sans",sans-serif',
+      pointerEvents:'none', opacity:'0', transition:'opacity 0.15s',
+    });
+    scrollHint.textContent='スクロール中… 止まると新しい位置で撮影モードに戻ります';
+    document.documentElement.appendChild(scrollHint);
+
+    function onWheel(e){ if (Math.abs(e.deltaY)>1 || Math.abs(e.deltaX)>1) enterScroll(); }
+    function onScroll(){ if (scrolling){ clearTimeout(scrollTimer); scrollTimer=setTimeout(endScroll,260); } }
+
+    function enterScroll(){
+      if (!scrolling){
+        scrolling=true;
+        // 選択状態はスクロールで座標が変わるためリセット
+        prevRect=hoverRect=dragRect=dragStart=activeH=null; snapGuides={x:null,y:null};
+        host.style.opacity='0'; host.style.pointerEvents='none';
+        scrollHint.style.opacity='1';
+      }
+      clearTimeout(scrollTimer); scrollTimer=setTimeout(endScroll,260);
+    }
+    function endScroll(){ reCapture(0); }
+    function reCapture(attempt){
+      chrome.runtime.sendMessage({type:'recapture'}, (resp)=>{
+        if (chrome.runtime.lastError || !resp || !resp.dataUrl){
+          if (attempt<3){ setTimeout(()=>reCapture(attempt+1), 500); return; }
+          toast('画面の再取得に失敗しました', false); cleanup(); return;
+        }
+        cropImg.onload=()=>draw();     // 新しい画像を読み込んだら明るい部分も再描画
+        cropImg.src=resp.dataUrl;
+        bgi.src=resp.dataUrl;
+        collectSnapLines();            // 新しい表示位置で吸着線を取り直す
+        scrolling=false;
+        host.style.opacity='1'; host.style.pointerEvents='all';
+        scrollHint.style.opacity='0';
+        setGuide(false); draw();       // まず暗い背景を描画（画像ロード後にonloadで再描画）
+      });
+    }
+    window.addEventListener('wheel', onWheel, {passive:true, capture:true});
+    window.addEventListener('scroll', onScroll, {passive:true, capture:true});
+
     function cleanup() {
       document.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('wheel', onWheel, {capture:true});
+      window.removeEventListener('scroll', onScroll, {capture:true});
+      clearTimeout(scrollTimer);
+      scrollHint.remove();
       host.remove();
     }
 

@@ -28,3 +28,13 @@ chrome.runtime.onMessage.addListener((msg) => {
     });
   }
 });
+
+// オーバーレイからの再キャプチャ要求（スクロールで撮影位置を変えたとき）
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type !== 'recapture') return;
+  const winId = sender.tab ? sender.tab.windowId : undefined;
+  chrome.tabs.captureVisibleTab(winId, {format: 'png'})
+    .then(dataUrl => sendResponse({dataUrl}))
+    .catch(() => sendResponse({dataUrl: null}));
+  return true; // 非同期でレスポンスを返す
+});

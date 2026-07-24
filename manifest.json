@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SmartShot",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "範囲選択スクリーンショット。要素を自動検出し辺に吸着。撮影と同時にクリップボードへコピー＆PNG保存。",
   "permissions": ["activeTab", "storage", "downloads", "scripting", "clipboardWrite"],
   "action": {
