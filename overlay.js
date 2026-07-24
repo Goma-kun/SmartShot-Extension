@@ -18,14 +18,21 @@
   });
 
   function init(imgSrc) {
-    const W = window.innerWidth;
-    const H = window.innerHeight;
+    // getBoundingClientRect と同じ座標系（縦スクロールバーを除いた表示領域）に合わせる。
+    // innerWidth を使うとスクロールバー幅ぶん背景が横に伸び、右側の要素ほど枠がずれる。
+    const W = document.documentElement.clientWidth;
+    const H = document.documentElement.clientHeight;
     const DPR = window.devicePixelRatio || 1;
+    // オーバーレイもスクロールバーを覆わないよう、表示領域ぴったりに配置する
+    Object.assign(host.style, {
+      top:'0', left:'0', right:'auto', bottom:'auto',
+      width:W+'px', height:H+'px',
+    });
 
     shadow.innerHTML = `
       <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        #wrap { position: fixed; inset: 0; overflow: hidden; }
+        #wrap { position: absolute; inset: 0; overflow: hidden; }
         #bg { position: absolute; inset: 0; }
         #bg img { width: 100%; height: 100%; display: block; filter: brightness(0.5); }
         #cv { position: absolute; inset: 0; cursor: crosshair; }
@@ -107,6 +114,25 @@
       return null;
     }
 
+    // CSS座標→キャプチャ画像の実ピクセルへの倍率（DPR固定ではなく実画像から算出）
+    function imgScale() {
+      const nw=cropImg.naturalWidth, nh=cropImg.naturalHeight;
+      return (nw && nh) ? {x:nw/W, y:nh/H} : {x:DPR, y:DPR};
+    }
+
+    // 要素の角丸半径（4隅）を取得。各辺の半分にクランプ
+    function cornerRadii(el, w, h) {
+      const cs=getComputedStyle(el);
+      const p=v=>{ const n=parseFloat(v); return isNaN(n)?0:n; };
+      const m=Math.min(w,h)/2;
+      return [
+        Math.min(p(cs.borderTopLeftRadius),     m),
+        Math.min(p(cs.borderTopRightRadius),    m),
+        Math.min(p(cs.borderBottomRightRadius), m),
+        Math.min(p(cs.borderBottomLeftRadius),  m),
+      ];
+    }
+
     function detectElem(mx,my) {
       host.style.pointerEvents = 'none';
       const el = document.elementFromPoint(mx, my);
@@ -115,7 +141,7 @@
       const r = el.getBoundingClientRect();
       if (r.width < 10 || r.height < 10) return null;
       if (r.width >= W*0.98 && r.height >= H*0.98) return null;
-      return {x:r.left, y:r.top, w:r.width, h:r.height};
+      return {x:r.left, y:r.top, w:r.width, h:r.height, r:cornerRadii(el, r.width, r.height)};
     }
 
     // ── 描画 ──
@@ -136,13 +162,22 @@
       ctx.fillRect(r.x+r.w,r.y,W-r.x-r.w,r.h);
       ctx.fillRect(0,r.y+r.h,W,H-r.y-r.h);
 
+      // 角丸情報。要素検出時のみ半径を持つ（手動ドラッグは直角）
+      const rad = r.r || [0,0,0,0];
+      const hasR = rad.some(v => v > 0.5);
+      const pathRect = (x,y,w,h,extra=0) => {
+        ctx.beginPath();
+        if (hasR) ctx.roundRect(x, y, w, h, rad.map(v => Math.max(0, v+extra)));
+        else ctx.rect(x, y, w, h);
+      };
+
       // 選択枠内：オリジナル画像を上書き描画（明るく）
       if (cropImg.complete) {
+        const s = imgScale();
         ctx.save();
-        ctx.beginPath();
-        ctx.rect(r.x, r.y, r.w, r.h);
+        pathRect(r.x, r.y, r.w, r.h);
         ctx.clip();
-        ctx.drawImage(cropImg, r.x*DPR, r.y*DPR, r.w*DPR, r.h*DPR, r.x, r.y, r.w, r.h);
+        ctx.drawImage(cropImg, r.x*s.x, r.y*s.y, r.w*s.x, r.h*s.y, r.x, r.y, r.w, r.h);
         ctx.restore();
       }
 
@@ -152,13 +187,14 @@
       // グロー
       ctx.strokeStyle = isPrev ? 'rgba(52,211,153,0.35)' : 'rgba(0,212,255,0.35)';
       ctx.lineWidth = 5;
-      ctx.strokeRect(r.x-2,r.y-2,r.w+4,r.h+4);
+      pathRect(r.x-2, r.y-2, r.w+4, r.h+4, 2); ctx.stroke();
       // 枠線
       ctx.strokeStyle = col; ctx.lineWidth = 1.5;
-      ctx.strokeRect(r.x,r.y,r.w,r.h);
+      pathRect(r.x, r.y, r.w, r.h); ctx.stroke();
 
       // サイズバッジ
-      const pw=Math.round(r.w*DPR), ph=Math.round(r.h*DPR);
+      const bs=imgScale();
+      const pw=Math.round(r.w*bs.x), ph=Math.round(r.h*bs.y);
       const label=`${pw} × ${ph}`;
       ctx.font='500 12px -apple-system,sans-serif';
       const tw=ctx.measureText(label).width;
@@ -217,7 +253,7 @@
           const st=snap1(ny,yLines), sb=snap1(ny+h,yLines);
           if (sl!==null){ nx=sl; snapGuides.x=sl; } else if (sr!==null){ nx=sr-w; snapGuides.x=sr; }
           if (st!==null){ ny=st; snapGuides.y=st; } else if (sb!==null){ ny=sb-h; snapGuides.y=sb; }
-          prevRect={x:nx,y:ny,w,h};
+          prevRect={x:nx,y:ny,w,h, r:hOrigRect.r};
         }
         else {
           let x1=x,y1=y,x2=x+w,y2=y+h;
@@ -225,7 +261,7 @@
           if (activeH.includes('R')) { x2=x+w+dx; const s=snap1(x2,xLines); if(s!==null){x2=s;snapGuides.x=s;} x2=Math.max(x2,x1+10); }
           if (activeH.includes('T')) { y1=y+dy; const s=snap1(y1,yLines); if(s!==null){y1=s;snapGuides.y=s;} y1=Math.min(y1,y2-10); }
           if (activeH.includes('B')) { y2=y+h+dy; const s=snap1(y2,yLines); if(s!==null){y2=s;snapGuides.y=s;} y2=Math.max(y2,y1+10); }
-          prevRect=norm(x1,y1,x2,y2);
+          prevRect=norm(x1,y1,x2,y2); prevRect.r=hOrigRect.r;
         }
         draw(); return;
       }
@@ -313,12 +349,16 @@
 
     // ── 保存＆コピー ──
     function save(r) {
-      const pw=Math.round(r.w*DPR), ph=Math.round(r.h*DPR);
+      const s=imgScale();
+      const pw=Math.round(r.w*s.x), ph=Math.round(r.h*s.y);
       if (pw<1||ph<1) return;
       const off=document.createElement('canvas');
       off.width=pw; off.height=ph;
       const octx=off.getContext('2d');
-      octx.drawImage(cropImg, r.x*DPR, r.y*DPR, pw, ph, 0, 0, pw, ph);
+      // 角丸要素は角丸のまま切り抜く（PNGの四隅は透明になる）
+      const rad=(r.r||[0,0,0,0]).map(v=>v*s.x);
+      if (rad.some(v=>v>0.5)) { octx.beginPath(); octx.roundRect(0,0,pw,ph,rad); octx.clip(); }
+      octx.drawImage(cropImg, r.x*s.x, r.y*s.y, pw, ph, 0, 0, pw, ph);
 
       // クリップボードへコピー。navigator.clipboard.write は「その文書がフォーカスを
       // 持っている」ことが必要なので、オーバーレイを消す前・ユーザー操作の同期文脈で実行する。
