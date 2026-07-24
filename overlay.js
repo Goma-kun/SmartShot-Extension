@@ -84,17 +84,30 @@
     const SNAP = 8;            // エッジスナップ距離 px
     let snapGuides = {x:null, y:null};
 
-    // ページ内の可視要素の辺を収集（ドラッグ・リサイズ・移動時のスナップ先）
-    // スクロールで撮影位置が変わったら再収集するので関数化しておく
-    let xLines=[], yLines=[];
+    // ページ内の可視要素の辺（吸着先）と、角丸コーナー（手動選択の角追従用）を収集。
+    // スクロールで撮影位置が変わったら再収集するので関数化しておく。
+    // 角丸は当たり判定（elementFromPoint）だと、角丸で切り抜かれた透明部分に当たって拾えないため、
+    // ここで各要素のborder-radiusを直接読み、角の座標＋半径のリストを作っておく。
+    let xLines=[], yLines=[], roundedCorners=[];
     function collectSnapLines(){
       const xs=new Set(), ys=new Set();
+      roundedCorners=[];
       for (const el of document.querySelectorAll('body *')) {
         const r = el.getBoundingClientRect();
         if (r.width<10 || r.height<10) continue;
         if (r.bottom<0 || r.right<0 || r.top>H || r.left>W) continue;
         xs.add(Math.round(r.left)); xs.add(Math.round(r.right));
         ys.add(Math.round(r.top));  ys.add(Math.round(r.bottom));
+        const cs=getComputedStyle(el);
+        const m=Math.min(r.width,r.height)/2;
+        const tl=Math.min(parseFloat(cs.borderTopLeftRadius)||0,     m);
+        const tr=Math.min(parseFloat(cs.borderTopRightRadius)||0,    m);
+        const br=Math.min(parseFloat(cs.borderBottomRightRadius)||0, m);
+        const bl=Math.min(parseFloat(cs.borderBottomLeftRadius)||0,  m);
+        if (tl>0.5) roundedCorners.push({x:r.left,  y:r.top,    c:0, r:tl});  // c: 0=TL 1=TR 2=BR 3=BL
+        if (tr>0.5) roundedCorners.push({x:r.right, y:r.top,    c:1, r:tr});
+        if (br>0.5) roundedCorners.push({x:r.right, y:r.bottom, c:2, r:br});
+        if (bl>0.5) roundedCorners.push({x:r.left,  y:r.bottom, c:3, r:bl});
         if (xs.size>4000) break;
       }
       xLines=[...xs]; yLines=[...ys];
@@ -169,37 +182,19 @@
       return best;
     }
 
-    // 任意の矩形の4隅それぞれについて、その角に重なる要素の対応する角丸を採用する。
-    // これにより、手動でドラッグ・リサイズした選択でも、角が丸い要素の角に一致したところだけ丸くなる
-    // （例：左は丸いサムネ、右は四角いテキスト → 左2角だけ丸く追従）。
+    // 任意の矩形の4隅それぞれについて、収集済みの角丸コーナーと一致するものがあれば採用する。
+    // 手動でドラッグ・リサイズした選択でも、角が丸い要素の角に一致したところだけ丸くなる
+    // （例：左は丸いサムネ、右は四角いテキスト → 左2角だけ丸く追従）。当たり判定に頼らないので確実。
     function radiiForRect(x, y, w, h) {
       const near=(a,b)=>Math.abs(a-b)<=8;
       const m=Math.min(w,h)/2;
-      // [角名, 角のx, 角のy, 内側方向x, 内側方向y, CSSプロパティ, 要素側で見る辺x, 辺y]
-      const specs=[
-        [x,   y,   +1,+1, 'borderTopLeftRadius',     'left','top'],
-        [x+w, y,   -1,+1, 'borderTopRightRadius',    'right','top'],
-        [x+w, y+h, -1,-1, 'borderBottomRightRadius', 'right','bottom'],
-        [x,   y+h, +1,-1, 'borderBottomLeftRadius',  'left','bottom'],
-      ];
-      return specs.map(([cx,cy,ix,iy,prop,ex,ey])=>{
-        host.style.pointerEvents='none';
-        const el=document.elementFromPoint(cx+ix*3, cy+iy*3);
-        host.style.pointerEvents='all';
-        if (!el || el===document.documentElement || el===document.body) return 0;
+      const corners=[[x,y,0],[x+w,y,1],[x+w,y+h,2],[x,y+h,3]];  // TL TR BR BL
+      return corners.map(([cx,cy,ci])=>{
         let best=0;
-        const consider=e=>{
-          if (!e || e.nodeType!==1) return;
-          let r; try { r=e.getBoundingClientRect(); } catch(_){ return; }
-          if (!near(r[ex],cx) || !near(r[ey],cy)) return;   // 要素の対応する角が選択の角と一致するか
-          const rad=parseFloat(getComputedStyle(e)[prop])||0;
-          best=Math.max(best, Math.min(rad, m));
-        };
-        consider(el);
-        let p=el.parentElement, d=0; while(p&&d<4){consider(p);p=p.parentElement;d++;}
-        const stack=[...el.children]; let n=0;
-        while(stack.length&&n<24){const c=stack.pop();n++;consider(c);if(c.children&&c.children.length)stack.push(...c.children);}
-        return best;
+        for (const rc of roundedCorners){
+          if (rc.c===ci && near(rc.x,cx) && near(rc.y,cy)) best=Math.max(best, rc.r);
+        }
+        return Math.min(best, m);
       });
     }
 
