@@ -141,6 +141,31 @@
       ];
     }
 
+    // 検出した矩形と同じ範囲を占める要素の中から、実際の角丸を探す。
+    // YouTubeサムネ等は最前面の<a>に角丸が無く、内側/外側のコンテナ（overflow:hidden）が
+    // 丸めているため、ヒット要素だけ見ると直角になる。近い矩形の祖先・子孫も調べて最大半径を採用。
+    function detectRadius(el, x, y, w, h) {
+      const near=(a,b)=>Math.abs(a-b)<=4;
+      const sameBox=r=>near(r.left,x)&&near(r.top,y)&&near(r.width,w)&&near(r.height,h);
+      let best=[0,0,0,0];
+      const consider=e=>{
+        if (!e || e.nodeType!==1) return;
+        let r; try { r=e.getBoundingClientRect(); } catch(_) { return; }
+        if (!sameBox(r)) return;
+        const rad=cornerRadii(e, w, h);
+        best=best.map((v,i)=>Math.max(v,rad[i]));
+      };
+      consider(el);
+      let p=el.parentElement, d=0;
+      while (p && d<5) { consider(p); p=p.parentElement; d++; }   // 同じ矩形の祖先（overflow:hidden枠）
+      const stack=[...el.children]; let n=0;
+      while (stack.length && n<80) {                              // 同じ矩形を占める子孫（画像など）
+        const c=stack.pop(); n++; consider(c);
+        if (c.children && c.children.length) stack.push(...c.children);
+      }
+      return best;
+    }
+
     function detectElem(mx,my) {
       host.style.pointerEvents = 'none';
       const el = document.elementFromPoint(mx, my);
@@ -149,7 +174,7 @@
       const r = el.getBoundingClientRect();
       if (r.width < 10 || r.height < 10) return null;
       if (r.width >= W*0.98 && r.height >= H*0.98) return null;
-      return {x:r.left, y:r.top, w:r.width, h:r.height, r:cornerRadii(el, r.width, r.height)};
+      return {x:r.left, y:r.top, w:r.width, h:r.height, r:detectRadius(el, r.left, r.top, r.width, r.height)};
     }
 
     // ── 描画 ──
