@@ -39,6 +39,12 @@
     }
     .change-link:hover { color: #7dd3fc; }
     .note { font-size: 11px; color: #475569; margin-top: 10px; line-height: 1.5; }
+    .log {
+      margin-top: 10px; border-top: 1px solid #1e293b; padding-top: 8px;
+      font-size: 10px; color: #64748b; line-height: 1.6;
+    }
+    .log b { color: #94a3b8; font-size: 11px; display: block; margin-bottom: 4px; }
+    .log div { font-family: monospace; }
   </style>
 </head>
 <body>
@@ -52,6 +58,7 @@
     </div>
   </div>
   <p class="note">ページ上をホバーで要素を自動検出。ドラッグで手動選択。Return または枠外クリックで保存。他の拡張と競合するときは「変更」からキーを変えられます。</p>
+  <div class="log" id="log"></div>
   <script src="popup.js"></script>
 </body>
 </html>

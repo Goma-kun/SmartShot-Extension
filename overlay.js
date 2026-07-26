@@ -1,9 +1,15 @@
 (function () {
   'use strict';
-  if (document.getElementById('smartshot-host')) return;
+  // 起動中にもう一度ショートカットを押したら閉じる（トグル）。
+  // 意図せず起動してしまったときに、同じ操作でそのまま解除できるようにする。
+  if (document.getElementById('smartshot-host')) {
+    window.dispatchEvent(new Event('smartshot-close'));
+    return;
+  }
 
   const host = document.createElement('div');
   host.id = 'smartshot-host';
+  host.tabIndex = -1;              // Esc を確実に受け取るためフォーカス可能にする
   Object.assign(host.style, {
     position: 'fixed', inset: '0',
     zIndex: '2147483647',
@@ -56,7 +62,7 @@
       <div id="wrap">
         <div id="bg"><img id="bgi"></div>
         <canvas id="cv"></canvas>
-        <div id="guide">要素にホバーで自動検出 ／ ドラッグで手動選択 ／ スクロールで位置移動 ／ Esc でキャンセル</div>
+        <div id="guide">ホバーで自動検出 ／ ドラッグで選択 ／ スクロールで移動 ／ Esc かショートカット再押しで解除</div>
       </div>`;
 
     const bgi   = shadow.getElementById('bgi');
@@ -301,7 +307,7 @@
     function setGuide(isPreview) {
       guide.textContent = isPreview
         ? '辺にピタッと吸着 ／ Return またはクリックでコピー＆保存 ／ Esc で再選択'
-        : '要素にホバーで自動検出 ／ ドラッグで手動選択 ／ スクロールで位置移動 ／ Esc でキャンセル';
+        : 'ホバーで自動検出 ／ ドラッグで選択 ／ スクロールで移動 ／ Esc かショートカット再押しで解除';
     }
 
     // ── マウスイベント ──
@@ -393,7 +399,14 @@
         save(prevRect); e.preventDefault();
       }
     }
+    // iframe等にフォーカスがあると Esc を取り逃すことがあるため、
+    // オーバーレイ自身にフォーカスを移し、window/document 両方で捕捉する。
     document.addEventListener('keydown', onKey, true);
+    window.addEventListener('keydown', onKey, true);
+    try { host.focus({preventScroll:true}); } catch(_) { }
+
+    // 起動中に再度ショートカットが押されたとき（トグル）閉じる
+    window.addEventListener('smartshot-close', cleanup);
 
     // ── スクロールして撮影位置を変える ──
     // 起動時の1枚に固定されず、スクロールで別の場所を見てから選べるようにする。
@@ -445,6 +458,8 @@
 
     function cleanup() {
       document.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('smartshot-close', cleanup);
       window.removeEventListener('wheel', onWheel, {capture:true});
       window.removeEventListener('scroll', onScroll, {capture:true});
       clearTimeout(scrollTimer);
