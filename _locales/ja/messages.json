@@ -1,0 +1,52 @@
+{
+  "extDescription": {
+    "message": "範囲選択スクリーンショット。要素を自動検出し辺に吸着。撮影と同時にクリップボードへコピー＆PNG保存。",
+    "description": "Chrome ウェブストアに表示される説明"
+  },
+  "commandDescription": {
+    "message": "スクリーンショット範囲選択を起動"
+  },
+
+  "popupButton": {
+    "message": "▶ スクリーンショット"
+  },
+  "popupShortcut": {
+    "message": "ショートカット"
+  },
+  "popupChange": {
+    "message": "変更"
+  },
+  "popupNote": {
+    "message": "ページ上をホバーで要素を自動検出。ドラッグで手動選択。Return または枠外クリックで保存。他の拡張と競合するときは「変更」からキーを変えられます。"
+  },
+  "popupRecentLaunches": {
+    "message": "最近の起動"
+  },
+
+  "guideSelect": {
+    "message": "ホバーで自動検出 ／ ドラッグで選択 ／ スクロールで移動 ／ Esc かショートカット再押しで解除"
+  },
+  "guidePreview": {
+    "message": "辺にピタッと吸着 ／ Return またはクリックでコピー＆保存 ／ Esc で再選択"
+  },
+  "hintScrolling": {
+    "message": "スクロール中… 止まると新しい位置で撮影モードに戻ります"
+  },
+
+  "toastCopied": {
+    "message": "コピーしました（⌘Vで貼り付け）／PNGも保存"
+  },
+  "toastSavedOnly": {
+    "message": "PNG保存のみ（コピー失敗）"
+  },
+  "toastRecaptureFailed": {
+    "message": "画面の再取得に失敗しました"
+  },
+
+  "triggerShortcut": {
+    "message": "ショートカットキー"
+  },
+  "triggerPopup": {
+    "message": "ポップアップのボタン"
+  }
+}

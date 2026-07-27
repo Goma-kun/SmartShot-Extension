@@ -1,0 +1,52 @@
+{
+  "extDescription": {
+    "message": "Capture any region, snap to element edges, and get it on your clipboard instantly. Rounded corners are preserved.",
+    "description": "Extension description shown in the Chrome Web Store"
+  },
+  "commandDescription": {
+    "message": "Start region capture"
+  },
+
+  "popupButton": {
+    "message": "▶ Capture"
+  },
+  "popupShortcut": {
+    "message": "Shortcut"
+  },
+  "popupChange": {
+    "message": "Change"
+  },
+  "popupNote": {
+    "message": "Hover to auto-detect an element, or drag to select manually. Press Return or click inside to capture. If the shortcut conflicts with another extension, change it here."
+  },
+  "popupRecentLaunches": {
+    "message": "Recent launches"
+  },
+
+  "guideSelect": {
+    "message": "Hover to detect · Drag to select · Scroll to move · Esc or shortcut again to cancel"
+  },
+  "guidePreview": {
+    "message": "Snaps to edges · Return or click to copy & save · Esc to reselect"
+  },
+  "hintScrolling": {
+    "message": "Scrolling… capture resumes when you stop"
+  },
+
+  "toastCopied": {
+    "message": "Copied to clipboard (⌘V to paste) · PNG saved"
+  },
+  "toastSavedOnly": {
+    "message": "PNG saved (clipboard copy failed)"
+  },
+  "toastRecaptureFailed": {
+    "message": "Failed to refresh the screen capture"
+  },
+
+  "triggerShortcut": {
+    "message": "Keyboard shortcut"
+  },
+  "triggerPopup": {
+    "message": "Popup button"
+  }
+}

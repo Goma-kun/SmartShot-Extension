@@ -1,5 +1,7 @@
 (function () {
   'use strict';
+  // i18n: ブラウザの言語に応じた文言を返す
+  const T = k => chrome.i18n.getMessage(k) || k;
   // 起動中にもう一度ショートカットを押したら閉じる（トグル）。
   // 意図せず起動してしまったときに、同じ操作でそのまま解除できるようにする。
   if (document.getElementById('smartshot-host')) {
@@ -62,7 +64,7 @@
       <div id="wrap">
         <div id="bg"><img id="bgi"></div>
         <canvas id="cv"></canvas>
-        <div id="guide">ホバーで自動検出 ／ ドラッグで選択 ／ スクロールで移動 ／ Esc かショートカット再押しで解除</div>
+        <div id="guide">${T("guideSelect")}</div>
       </div>`;
 
     const bgi   = shadow.getElementById('bgi');
@@ -306,8 +308,8 @@
 
     function setGuide(isPreview) {
       guide.textContent = isPreview
-        ? '辺にピタッと吸着 ／ Return またはクリックでコピー＆保存 ／ Esc で再選択'
-        : 'ホバーで自動検出 ／ ドラッグで選択 ／ スクロールで移動 ／ Esc かショートカット再押しで解除';
+        ? T("guidePreview")
+        : T("guideSelect");
     }
 
     // ── マウスイベント ──
@@ -420,7 +422,7 @@
       font:'600 12px -apple-system,"Hiragino Sans",sans-serif',
       pointerEvents:'none', opacity:'0', transition:'opacity 0.15s',
     });
-    scrollHint.textContent='スクロール中… 止まると新しい位置で撮影モードに戻ります';
+    scrollHint.textContent=T("hintScrolling");
     document.documentElement.appendChild(scrollHint);
 
     function onWheel(e){ if (Math.abs(e.deltaY)>1 || Math.abs(e.deltaX)>1) enterScroll(); }
@@ -441,7 +443,7 @@
       chrome.runtime.sendMessage({type:'recapture'}, (resp)=>{
         if (chrome.runtime.lastError || !resp || !resp.dataUrl){
           if (attempt<3){ setTimeout(()=>reCapture(attempt+1), 500); return; }
-          toast('画面の再取得に失敗しました', false); cleanup(); return;
+          toast(T("toastRecaptureFailed"), false); cleanup(); return;
         }
         cropImg.onload=()=>draw();     // 新しい画像を読み込んだら明るい部分も再描画
         cropImg.src=resp.dataUrl;
@@ -502,7 +504,7 @@
       const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
       const finish = (copied) => {
         chrome.runtime.sendMessage({type:'download', dataUrl:off.toDataURL('image/png'), filename:`SmartShot_${ts}.png`});
-        toast(copied ? 'コピーしました（⌘Vで貼り付け）／PNGも保存' : 'PNG保存のみ（コピー失敗）', copied);
+        toast(copied ? T("toastCopied") : T("toastSavedOnly"), copied);
         cleanup();
       };
 

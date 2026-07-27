@@ -1,3 +1,9 @@
+// data-i18n を持つ要素に、ブラウザの言語に応じたテキストを流し込む
+for (const el of document.querySelectorAll('[data-i18n]')) {
+  const msg = chrome.i18n.getMessage(el.dataset.i18n);
+  if (msg) el.textContent = msg;
+}
+
 document.getElementById('shot-btn').addEventListener('click', () => {
   chrome.runtime.sendMessage({type: 'launch'});
   window.close();
@@ -13,8 +19,9 @@ document.getElementById('change-shortcut').addEventListener('click', () => {
 chrome.storage.session.get(['smartshot_log'], ({smartshot_log}) => {
   const box = document.getElementById('log');
   if (!smartshot_log || !smartshot_log.length) return;
-  box.innerHTML = '<b>最近の起動</b>' +
+  const title = chrome.i18n.getMessage('popupRecentLaunches');
+  box.innerHTML = `<b>${title}</b>` +
     smartshot_log.slice(0, 3)
-      .map(e => `<div>${e.at} — ${e.trigger}</div>`)
+      .map(e => `<div>${e.at} — ${chrome.i18n.getMessage(e.triggerKey) || e.triggerKey}</div>`)
       .join('');
 });

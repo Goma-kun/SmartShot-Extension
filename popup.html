@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
   <meta charset="UTF-8">
   <style>
@@ -49,15 +49,15 @@
 </head>
 <body>
   <h2>📷 SmartShot</h2>
-  <button class="btn" id="shot-btn">▶ スクリーンショット</button>
+  <button class="btn" id="shot-btn" data-i18n="popupButton"></button>
   <div class="shortcut">
-    <span>ショートカット</span>
+    <span data-i18n="popupShortcut"></span>
     <div class="shortcut-row">
       <kbd>⌥ Shift S</kbd>
-      <button class="change-link" id="change-shortcut">変更</button>
+      <button class="change-link" id="change-shortcut" data-i18n="popupChange"></button>
     </div>
   </div>
-  <p class="note">ページ上をホバーで要素を自動検出。ドラッグで手動選択。Return または枠外クリックで保存。他の拡張と競合するときは「変更」からキーを変えられます。</p>
+  <p class="note" data-i18n="popupNote"></p>
   <div class="log" id="log"></div>
   <script src="popup.js"></script>
 </body>

@@ -4,9 +4,10 @@ chrome.storage.session.setAccessLevel({accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTE
 
 // 起動履歴（意図しない起動の原因切り分け用）。
 // chrome://extensions → SmartShot の「Service Worker」を開くとこのログが見られる。
-async function logLaunch(trigger) {
-  const entry = {trigger, at: new Date().toLocaleTimeString('ja-JP')};
-  console.log('[SmartShot] 起動:', entry.trigger, entry.at);
+// 表示は行わずメッセージキーで保存し、ポップアップ側で表示言語に合わせて解決する
+async function logLaunch(triggerKey) {
+  const entry = {triggerKey, at: new Date().toLocaleTimeString()};
+  console.log('[SmartShot] launched:', triggerKey, entry.at);
   try {
     const {smartshot_log = []} = await chrome.storage.session.get(['smartshot_log']);
     smartshot_log.unshift(entry);
@@ -14,8 +15,8 @@ async function logLaunch(trigger) {
   } catch (_) { }
 }
 
-async function launchOverlay(tabId, windowId, trigger) {
-  logLaunch(trigger || 'unknown');
+async function launchOverlay(tabId, windowId, triggerKey) {
+  logLaunch(triggerKey || 'unknown');
   try {
     const dataUrl = await chrome.tabs.captureVisibleTab(windowId, {format: 'png'});
     await chrome.storage.session.set({smartshot_img: dataUrl});
@@ -28,7 +29,7 @@ async function launchOverlay(tabId, windowId, trigger) {
 chrome.commands.onCommand.addListener(async (command) => {
   if (command !== 'take-screenshot') return;
   const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-  if (tab) await launchOverlay(tab.id, tab.windowId, 'ショートカットキー');
+  if (tab) await launchOverlay(tab.id, tab.windowId, 'triggerShortcut');
 });
 
 chrome.runtime.onMessage.addListener((msg) => {
@@ -37,7 +38,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
   if (msg.type === 'launch') {
     chrome.tabs.query({active: true, currentWindow: true}).then(([tab]) => {
-      if (tab) launchOverlay(tab.id, tab.windowId, 'ポップアップのボタン');
+      if (tab) launchOverlay(tab.id, tab.windowId, 'triggerPopup');
     });
   }
 });

@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "SmartShot",
-  "version": "0.3.0",
-  "description": "範囲選択スクリーンショット。要素を自動検出し辺に吸着。撮影と同時にクリップボードへコピー＆PNG保存。",
+  "version": "0.3.1",
+  "default_locale": "en",
+  "description": "__MSG_extDescription__",
   "permissions": ["activeTab", "storage", "downloads", "scripting", "clipboardWrite"],
   "action": {
     "default_popup": "popup.html",
@@ -21,7 +22,7 @@
         "default": "Alt+Shift+S",
         "mac": "Alt+Shift+S"
       },
-      "description": "スクリーンショット範囲選択を起動"
+      "description": "__MSG_commandDescription__"
     }
   }
 }
