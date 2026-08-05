@@ -16,7 +16,7 @@
     "message": "Change"
   },
   "popupNote": {
-    "message": "Hover to auto-detect an element, or drag to select manually. Press Return or click inside to capture. If the shortcut conflicts with another extension, change it here."
+    "message": "Hover to auto-detect an element, or drag to select manually. Press Return or click inside to capture. If the shortcut conflicts with another extension, change it here. Note: it cannot run on the new tab page or chrome:// pages (a Chrome restriction)."
   },
   "popupRecentLaunches": {
     "message": "Recent launches"
