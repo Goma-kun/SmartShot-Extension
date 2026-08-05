@@ -502,28 +502,43 @@
       // クリップボードへコピー。navigator.clipboard.write は「その文書がフォーカスを
       // 持っている」ことが必要なので、オーバーレイを消す前・ユーザー操作の同期文脈で実行する。
       const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
-      const finish = (copied) => {
-        chrome.runtime.sendMessage({type:'download', dataUrl:off.toDataURL('image/png'), filename:`SmartShot_${ts}.png`});
-        toast(copied ? T("toastCopied") : T("toastSavedOnly"), copied);
+
+      // 撮影後の動作は設定で切り替える（copy=コピーのみ / both=コピーして保存 / save=保存のみ）。
+      // 「コピーのみ」なら保存自体を行わないので、Chromeの保存先確認ダイアログも出ない。
+      const finish = (mode, copied) => {
+        if (mode !== 'copy') {
+          chrome.runtime.sendMessage({type:'download', dataUrl:off.toDataURL('image/png'), filename:`SmartShot/SmartShot_${ts}.png`});
+        }
+        if (mode === 'save')      toast(T("toastSaved"), true);
+        else if (copied && mode === 'copy') toast(T("toastCopiedOnly"), true);
+        else if (copied)          toast(T("toastCopied"), true);
+        else if (mode === 'both') toast(T("toastSavedOnly"), false);
+        else                      toast(T("copyFailedMsg"), false);
         cleanup();
       };
 
-      let done=false;
-      const settle=(copied)=>{ if(done) return; done=true; finish(copied); };
+      chrome.storage.local.get(['smartshot_savemode'], ({smartshot_savemode}) => {
+        const mode = smartshot_savemode || 'both';
 
-      try {
-        off.toBlob((blob)=>{
-          if (!blob) { settle(false); return; }
-          try {
-            navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
-              .then(()=>settle(true))
-              .catch(()=>settle(false));
-          } catch(_) { settle(false); }
-        }, 'image/png');
-      } catch(_) { settle(false); }
+        // 保存のみのときはクリップボードに触れない
+        if (mode === 'save') { finish(mode, false); return; }
 
-      // 念のためのフォールバック（toBlobのコールバックが来ない環境向け）
-      setTimeout(()=>settle(false), 1500);
+        let done=false;
+        const settle=(copied)=>{ if(done) return; done=true; finish(mode, copied); };
+        try {
+          off.toBlob((blob)=>{
+            if (!blob) { settle(false); return; }
+            try {
+              navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+                .then(()=>settle(true))
+                .catch(()=>settle(false));
+            } catch(_) { settle(false); }
+          }, 'image/png');
+        } catch(_) { settle(false); }
+
+        // 念のためのフォールバック（toBlobのコールバックが来ない環境向け）
+        setTimeout(()=>settle(false), 1500);
+      });
     }
 
     // 初期描画（全面暗転）

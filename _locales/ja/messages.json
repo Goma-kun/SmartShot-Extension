@@ -6,7 +6,6 @@
   "commandDescription": {
     "message": "スクリーンショット範囲選択を起動"
   },
-
   "popupButton": {
     "message": "▶ スクリーンショット"
   },
@@ -22,7 +21,6 @@
   "popupRecentLaunches": {
     "message": "最近の起動"
   },
-
   "guideSelect": {
     "message": "ホバーで自動検出 ／ ドラッグで選択 ／ スクロールで移動 ／ Esc かショートカット再押しで解除"
   },
@@ -32,7 +30,6 @@
   "hintScrolling": {
     "message": "スクロール中… 止まると新しい位置で撮影モードに戻ります"
   },
-
   "toastCopied": {
     "message": "コピーしました（⌘Vで貼り付け）／PNGも保存"
   },
@@ -42,11 +39,34 @@
   "toastRecaptureFailed": {
     "message": "画面の再取得に失敗しました"
   },
-
   "triggerShortcut": {
     "message": "ショートカットキー"
   },
   "triggerPopup": {
     "message": "ポップアップのボタン"
+  },
+  "popupSaveMode": {
+    "message": "撮影したあと"
+  },
+  "modeCopy": {
+    "message": "コピーのみ"
+  },
+  "modeBoth": {
+    "message": "コピーして保存"
+  },
+  "modeSave": {
+    "message": "保存のみ"
+  },
+  "toastSaved": {
+    "message": "PNGを保存しました"
+  },
+  "toastSaveFailed": {
+    "message": "保存に失敗しました"
+  },
+  "toastCopiedOnly": {
+    "message": "コピーしました（⌘Vで貼り付け）"
+  },
+  "copyFailedMsg": {
+    "message": "コピーに失敗しました"
   }
 }

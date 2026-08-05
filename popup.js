@@ -15,6 +15,19 @@ document.getElementById('change-shortcut').addEventListener('click', () => {
   window.close();
 });
 
+// 撮影後の動作（コピーのみ／コピーして保存／保存のみ）
+const saveMode = document.getElementById('save-mode');
+const MODE_KEYS = {copy:'modeCopy', both:'modeBoth', save:'modeSave'};
+for (const opt of saveMode.options) {
+  opt.textContent = chrome.i18n.getMessage(MODE_KEYS[opt.value]) || opt.value;
+}
+chrome.storage.local.get(['smartshot_savemode'], ({smartshot_savemode}) => {
+  saveMode.value = smartshot_savemode || 'both';   // 既定は従来どおり「コピーして保存」
+});
+saveMode.addEventListener('change', () => {
+  chrome.storage.local.set({smartshot_savemode: saveMode.value});
+});
+
 // 直近の起動履歴を表示（意図しない起動の原因を確認するため）
 chrome.storage.session.get(['smartshot_log'], ({smartshot_log}) => {
   const box = document.getElementById('log');

@@ -6,7 +6,6 @@
   "commandDescription": {
     "message": "Start region capture"
   },
-
   "popupButton": {
     "message": "▶ Capture"
   },
@@ -22,7 +21,6 @@
   "popupRecentLaunches": {
     "message": "Recent launches"
   },
-
   "guideSelect": {
     "message": "Hover to detect · Drag to select · Scroll to move · Esc or shortcut again to cancel"
   },
@@ -32,7 +30,6 @@
   "hintScrolling": {
     "message": "Scrolling… capture resumes when you stop"
   },
-
   "toastCopied": {
     "message": "Copied to clipboard (⌘V to paste) · PNG saved"
   },
@@ -42,11 +39,34 @@
   "toastRecaptureFailed": {
     "message": "Failed to refresh the screen capture"
   },
-
   "triggerShortcut": {
     "message": "Keyboard shortcut"
   },
   "triggerPopup": {
     "message": "Popup button"
+  },
+  "popupSaveMode": {
+    "message": "After capture"
+  },
+  "modeCopy": {
+    "message": "Copy only"
+  },
+  "modeBoth": {
+    "message": "Copy and save"
+  },
+  "modeSave": {
+    "message": "Save only"
+  },
+  "toastSaved": {
+    "message": "Saved as PNG"
+  },
+  "toastSaveFailed": {
+    "message": "Failed to save"
+  },
+  "toastCopiedOnly": {
+    "message": "Copied to clipboard (⌘V to paste)"
+  },
+  "copyFailedMsg": {
+    "message": "Failed to copy"
   }
 }

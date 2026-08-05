@@ -38,6 +38,21 @@
       text-decoration: underline; font-family: inherit;
     }
     .change-link:hover { color: #7dd3fc; }
+    .setting {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 8px; padding: 8px 12px; margin-top: 8px;
+      font-size: 12px; color: #94a3b8;
+    }
+    .setting label { display: block; margin-bottom: 6px; }
+    #save-mode {
+      width: 100%; padding: 6px 8px;
+      background: #0f172a; border: 1px solid #334155; border-radius: 6px;
+      color: #e2e8f0; font-size: 12px; font-weight: 600; font-family: inherit;
+      cursor: pointer; -webkit-appearance: none; appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat; background-position: right 8px center; background-size: 14px;
+    }
+    #save-mode:focus { outline: none; border-color: #38bdf8; }
     .note { font-size: 11px; color: #475569; margin-top: 10px; line-height: 1.5; }
     .log {
       margin-top: 10px; border-top: 1px solid #1e293b; padding-top: 8px;
@@ -56,6 +71,14 @@
       <kbd>⌥ Shift S</kbd>
       <button class="change-link" id="change-shortcut" data-i18n="popupChange"></button>
     </div>
+  </div>
+  <div class="setting">
+    <label data-i18n="popupSaveMode"></label>
+    <select id="save-mode">
+      <option value="copy"></option>
+      <option value="both"></option>
+      <option value="save"></option>
+    </select>
   </div>
   <p class="note" data-i18n="popupNote"></p>
   <div class="log" id="log"></div>
