@@ -25,7 +25,9 @@ async function launchOverlay(tabId, windowId, triggerKey) {
     // 新しいタブページや chrome:// 系、ウェブストアには拡張機能を注入できない（Chromeの制約）。
     // ページ側には何も出せないので、ポップアップを自動で開いて理由を伝える。
     // バッジは openPopup が使えない環境（古いChrome等）のための保険。
-    console.error('[SmartShot]', e.message);
+    // console.error にすると拡張機能の管理画面に赤い「エラー」表示が残るが、
+    // 使えないページでの起動は想定内なので info レベルで記録する。
+    console.info('[SmartShot] このページでは起動できません:', e.message);
     await chrome.storage.session.set({smartshot_blocked: Date.now()});
     chrome.action.setBadgeText({text: '×'});
     chrome.action.setBadgeBackgroundColor({color: '#ef4444'});
