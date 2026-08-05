@@ -1,2 +1,8 @@
 .DS_Store
 STORE_LISTING.md
+
+# アイコン以外の画像素材が icons/ に紛れ込むのを防ぐ
+icons/*
+!icons/icon16.png
+!icons/icon48.png
+!icons/icon128.png
