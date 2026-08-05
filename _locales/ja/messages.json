@@ -68,5 +68,8 @@
   },
   "copyFailedMsg": {
     "message": "コピーに失敗しました"
+  },
+  "shortcutUnset": {
+    "message": "未設定"
   }
 }

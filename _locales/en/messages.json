@@ -68,5 +68,8 @@
   },
   "copyFailedMsg": {
     "message": "Failed to copy"
+  },
+  "shortcutUnset": {
+    "message": "Not set"
   }
 }

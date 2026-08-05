@@ -9,6 +9,21 @@ document.getElementById('shot-btn').addEventListener('click', () => {
   window.close();
 });
 
+// 実際に割り当てられているショートカットを表示する。
+// manifest の suggested_key は「初期値の提案」でしかなく、ユーザーが変更していたり
+// ブラウザ標準のキー（⌘A、⌘S など）と競合して未割り当てのままのこともあるため、
+// 固定文字列ではなく chrome.commands から実際の割り当てを読む。
+chrome.commands.getAll((cmds) => {
+  const el = document.getElementById('shortcut-key');
+  const cmd = cmds.find(c => c.name === 'take-screenshot');
+  if (cmd && cmd.shortcut) {
+    el.textContent = cmd.shortcut;
+  } else {
+    el.textContent = chrome.i18n.getMessage('shortcutUnset') || 'Not set';
+    el.style.color = '#fb923c';   // 未設定は色を変えて気づけるようにする
+  }
+});
+
 // Chrome標準のショートカット設定ページを開く（chrome://はリンク不可のためtabsで開く）
 document.getElementById('change-shortcut').addEventListener('click', () => {
   chrome.tabs.create({url: 'chrome://extensions/shortcuts'});
