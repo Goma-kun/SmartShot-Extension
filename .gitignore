@@ -6,3 +6,6 @@ icons/*
 !icons/icon16.png
 !icons/icon48.png
 !icons/icon128.png
+
+# 素材置き場（記事・動画・ストア掲載用。パッケージには含めない）
+assets/
