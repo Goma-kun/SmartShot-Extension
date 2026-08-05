@@ -38,6 +38,14 @@
       text-decoration: underline; font-family: inherit;
     }
     .change-link:hover { color: #7dd3fc; }
+    #blocked {
+      display: none;
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.5);
+      border-radius: 8px; padding: 10px 12px; margin-bottom: 10px;
+    }
+    #blocked b { display: block; color: #f87171; font-size: 12px; margin-bottom: 4px; }
+    #blocked span { display: block; color: #fca5a5; font-size: 11px; line-height: 1.5; }
     .setting {
       background: #1e293b; border: 1px solid #334155;
       border-radius: 8px; padding: 8px 12px; margin-top: 8px;
@@ -64,6 +72,10 @@
 </head>
 <body>
   <h2>📷 SmartShot</h2>
+  <div id="blocked">
+    <b data-i18n="blockedTitle"></b>
+    <span data-i18n="blockedBody"></span>
+  </div>
   <button class="btn" id="shot-btn" data-i18n="popupButton"></button>
   <div class="shortcut">
     <span data-i18n="popupShortcut"></span>

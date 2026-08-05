@@ -71,5 +71,11 @@
   },
   "shortcutUnset": {
     "message": "Not set"
+  },
+  "blockedTitle": {
+    "message": "⚠️ Not available on this page"
+  },
+  "blockedBody": {
+    "message": "The new tab page, chrome:// pages and the Web Store cannot be captured — Chrome does not allow extensions to run there. Open a regular web page and try again."
   }
 }

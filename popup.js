@@ -9,6 +9,15 @@ document.getElementById('shot-btn').addEventListener('click', () => {
   window.close();
 });
 
+// 直前に「使えないページ」で起動しようとした場合、その理由を最上部に表示する。
+// 注入できないページではトーストを出せないため、ポップアップ側で伝えるしかない。
+chrome.storage.session.get(['smartshot_blocked'], ({smartshot_blocked}) => {
+  if (smartshot_blocked && Date.now() - smartshot_blocked < 60000) {
+    document.getElementById('blocked').style.display = 'block';
+    chrome.storage.session.remove('smartshot_blocked');   // 一度見せたら消す
+  }
+});
+
 // 実際に割り当てられているショートカットを表示する。
 // manifest の suggested_key は「初期値の提案」でしかなく、ユーザーが変更していたり
 // ブラウザ標準のキー（⌘A、⌘S など）と競合して未割り当てのままのこともあるため、

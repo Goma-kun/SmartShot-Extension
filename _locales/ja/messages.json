@@ -71,5 +71,11 @@
   },
   "shortcutUnset": {
     "message": "未設定"
+  },
+  "blockedTitle": {
+    "message": "⚠️ このページでは使えません"
+  },
+  "blockedBody": {
+    "message": "新しいタブ、chrome:// のページ、ウェブストアでは撮影できません。Chromeが拡張機能の動作を許可していないためです。通常のWebページを開いてから、もう一度お試しください。"
   }
 }

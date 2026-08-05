@@ -23,11 +23,14 @@ async function launchOverlay(tabId, windowId, triggerKey) {
     await chrome.scripting.executeScript({target: {tabId}, files: ['overlay.js']});
   } catch (e) {
     // 新しいタブページや chrome:// 系、ウェブストアには拡張機能を注入できない（Chromeの制約）。
-    // 何も起きないと壊れたように見えるので、アイコンにバッジを出して理由が分かるようにする。
+    // ページ側には何も出せないので、ポップアップを自動で開いて理由を伝える。
+    // バッジは openPopup が使えない環境（古いChrome等）のための保険。
     console.error('[SmartShot]', e.message);
+    await chrome.storage.session.set({smartshot_blocked: Date.now()});
     chrome.action.setBadgeText({text: '×'});
     chrome.action.setBadgeBackgroundColor({color: '#ef4444'});
-    setTimeout(() => chrome.action.setBadgeText({text: ''}), 4000);
+    setTimeout(() => chrome.action.setBadgeText({text: ''}), 6000);
+    try { await chrome.action.openPopup(); } catch (_) { /* 開けない環境ではバッジのみ */ }
   }
 }
 
